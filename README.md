@@ -31,6 +31,6 @@ Time spent: 24
 
 ### Walkthrough
 
-![Video Walkthrough](...)
+![Video Walkthrough](./Yelp/YelpApp.gif)
 
 
