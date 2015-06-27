@@ -15,13 +15,10 @@
     // Initialization code
 }
 
-- (void)setSelected:(BOOL)selected
+-(void)setSelected:(BOOL)selected animated:(BOOL)animated
 {
-    [self setSelected:selected animated:NO];
-}
-
-- (void)setSelected:(BOOL)selected animated:(BOOL)animated
-{
+    [super setSelected:selected animated:animated];
+    [super setEnabled:selected];
     if (selected) {
         [self setAccessoryType:UITableViewCellAccessoryCheckmark];
     } else {

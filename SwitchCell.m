@@ -22,17 +22,15 @@
     // Initialization code
 }
 
-- (void)setSelected:(BOOL)selected
+-(void)setSelected:(BOOL)selected animated:(BOOL)animated
 {
-    [self setSelected:selected animated:NO];
+    [super setSelected:selected animated:animated];
+    [self setEnabled:selected];
+    [self.toggleSwitch setOn:selected];
 }
 
-- (void)setSelected:(BOOL)selected animated:(BOOL)animated
+- (IBAction)onSwitchValueChanged:(id)sender
 {
-    [self.toggleSwitch setOn: selected];
-}
-
-- (IBAction)onSwitchValueChanged:(id)sender {
     [self.delegate filterTableViewCell:self didUpdateValue: self.toggleSwitch.on];
 }
 @end

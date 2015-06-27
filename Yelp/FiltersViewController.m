@@ -11,10 +11,10 @@
 #import "CheckCell.h"
 
 @interface FiltersViewController ()
-@property (weak, nonatomic) IBOutlet UITableView *tableVIew;
+@property (weak, nonatomic) IBOutlet UITableView *tableView;
 @property (nonatomic, strong) NSMutableArray *filters;
 @property (nonatomic, strong) NSArray *categories;
-@property (nonatomic, strong) NSSet *selectedCategories;
+@property (nonatomic, strong) NSMutableSet *selectedCategories;
 @property (nonatomic, strong) NSArray *numOfsection;
 @property (nonatomic, strong) NSArray *cellIdOfSection;
 @property (nonatomic, strong) NSArray *textForFilter;
@@ -26,11 +26,11 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
 
-    self.tableVIew.dataSource = self;
-    self.tableVIew.delegate = self;
+    self.tableView.dataSource = self;
+    self.tableView.delegate = self;
     [self initCategories];
     self.numOfsection = @[@1, @5, @3, [[NSNumber alloc] initWithUnsignedLong:self.categories.count]];
-    self.filters = [NSMutableArray arrayWithArray:@[@"1", @"", @"0", @""]];
+    self.filters = [NSMutableArray arrayWithArray:@[@"0", @"", @"0", @""]];
     self.cellIdOfSection = @[@"SwitchCell", @"CheckCell", @"CheckCell", @"SwitchCell"];
     self.textForFilter = @[
                            @[@"Offering a Deal"],
@@ -42,6 +42,7 @@
                             @[@"", @"100", @"300", @"500", @"1000"],
                             @[@"0", @"1", @"2"]
                             ];
+    self.selectedCategories = [NSMutableSet set];
 }
 
 - (void)didReceiveMemoryWarning {
@@ -49,27 +50,64 @@
     // Dispose of any resources that can be recreated.
 }
 
-- (IBAction)onCancel:(id)sender {
+- (void)filterTableViewCell:(FilterTableViewCell *)cell didUpdateValue:(BOOL)value
+{
+    NSLog(@"filterTableViewCell didUpdateValue %d", value);
+    NSIndexPath *indexPath = [self.tableView indexPathForCell:cell];
+    SwitchCell *switchCell = (SwitchCell *)cell;
+    switch (indexPath.section) {
+        case 0:
+            if (switchCell.toggleSwitch.on) {
+                self.filters[indexPath.section] = @"1";
+            } else {
+                self.filters[indexPath.section] = @"0";
+            }
+        case 3:
+            if (switchCell.toggleSwitch.on) {
+                [self.selectedCategories addObject:self.categories[indexPath.row][@"code"]];
+            } else {
+                [self.selectedCategories removeObject:self.categories[indexPath.row][@"code"]];
+            }
+        default:
+            break;
+    }
+}
+
+
+- (IBAction)onCancel:(id)sender
+{
     [self dismissViewControllerAnimated:YES completion:nil];
 }
 
-- (IBAction)onApply:(id)sender {
-    NSDictionary *retDict = @{
-                              @"deals_filter":self.filters[0],
-                              @"radius_filter":self.filters[1],
-                              @"sort":self.filters[2],
-                              @"category_filter":@""
-                              };
-    NSLog(@"delegate: %@", self.delegate);
+- (IBAction)onApply:(id)sender
+{
+
+    NSArray *dictKeys = @[@"deals_filter", @"radius_filter", @"sort", @"category_filter"];
+
+    NSArray *sortedCategories = [self.selectedCategories sortedArrayUsingDescriptors:
+     @[[NSSortDescriptor sortDescriptorWithKey:@"self" ascending:NO]]
+    ];
+    
+    self.filters[3] = [sortedCategories componentsJoinedByString:@","];
+    
+    NSMutableDictionary *retDict = [NSMutableDictionary dictionary];
+    for (NSInteger i = 0; i< dictKeys.count; i++) {
+        if (![self.filters[i] isEqualToString: @""]) {
+            [retDict setObject: self.filters[i] forKey:dictKeys[i]];
+        }
+    }
+
+    NSLog(@"filters: %@", retDict);
     [self.delegate filtersViewController:self didChangeFilters:retDict];
     [self dismissViewControllerAnimated:YES completion:nil];
 }
 
 #pragma mark - Table view data source
 
-- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
+{
     // Return the number of sections.
-    return self.numOfsection.count;
+    return [self.numOfsection count];
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
@@ -79,19 +117,13 @@
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    
     FilterTableViewCell *cell = [tableView dequeueReusableCellWithIdentifier: self.cellIdOfSection[indexPath.section] forIndexPath:indexPath];
-
+    cell.delegate = self;
     switch(indexPath.section) {
         case 0:                                                                                                                                                                                                                                                                                                                                                                                                                 
         case 1:
         case 2:
             cell.titleLabel.text = self.textForFilter[indexPath.section][indexPath.row];
-            if ([self.filters[indexPath.section] isEqualToString: self.valueForFilter[indexPath.section][indexPath.row]]) {
-                [cell setSelected:YES];
-            } else {
-                [cell setSelected:NO];
-            }
             break;
         case 3:
             cell.titleLabel.text = self.categories[indexPath.row][@"name"];
@@ -100,28 +132,61 @@
     return cell;
 }
 
+- (void)tableView:(UITableView *)tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    SwitchCell *switchCell;
+    CheckCell *checkCell;
+    BOOL needSelected;
+    switch(indexPath.section) {
+        case 0:
+            switchCell = (SwitchCell *)cell;
+            needSelected = [self.filters[indexPath.section] isEqualToString: self.valueForFilter[indexPath.section][indexPath.row]];
+//            NSLog(@"cell %ld %ld %d", indexPath.section, indexPath.row, needSelected);
+            [switchCell setSelected:needSelected animated:NO];
+            break;
+        case 1:
+        case 2:
+            checkCell = (CheckCell *)cell;
+            needSelected = [self.filters[indexPath.section] isEqualToString: self.valueForFilter[indexPath.section][indexPath.row]];
+//            NSLog(@"cell %ld %ld %d", indexPath.section, indexPath.row, needSelected);
+            [checkCell setSelected:needSelected animated:NO];
+            break;
+        case 3:
+            switchCell = (SwitchCell *)cell;
+            needSelected = [self.selectedCategories containsObject:self.categories[indexPath.row][@"code"]];
+            [switchCell setSelected:needSelected animated:NO];
+            break;
+    }
+}
+
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-
-    FilterTableViewCell *cell;
+    SwitchCell *switchCell;
+    CheckCell *checkCell;
     switch (indexPath.section) {
         case 0:
-            cell = (FilterTableViewCell *)[tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:indexPath.section]];
-            if ([self.filters[indexPath.section] isEqualToString: self.valueForFilter[indexPath.section]]) {
-                [cell setSelected:YES];
+            switchCell = (SwitchCell *)[tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:indexPath.section]];
+            
+            if (switchCell.toggleSwitch.on) {
+                self.filters[indexPath.section] = @"1";
             } else {
-                [cell setSelected: NO];
+                self.filters[indexPath.section] = @"0";
             }
-            self.filters[indexPath.section] = self.valueForFilter[indexPath.section][indexPath.row];
         case 1:
         case 2:
             for (NSInteger i = 0; i < [self.numOfsection[indexPath.section] integerValue]; i++) {
-                FilterTableViewCell *cell = (FilterTableViewCell *)[tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:i inSection:indexPath.section]];
-                [cell setSelected:(i == indexPath.row)];
+                checkCell = (CheckCell *)[tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:i inSection:indexPath.section]];
+                [checkCell setSelected:(i == indexPath.row)];
             }
             self.filters[indexPath.section] = self.valueForFilter[indexPath.section][indexPath.row];
             break;
-            
+        case 3:
+            switchCell = (SwitchCell *)[tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:indexPath.section]];
+            if (switchCell.toggleSwitch.on) {
+                [self.selectedCategories addObject:self.categories[indexPath.row][@"code"]];
+            } else {
+                [self.selectedCategories removeObject:self.categories[indexPath.row][@"code"]];
+            }
         default:
             break;
     }
@@ -133,50 +198,6 @@
     NSArray *titleOfSection = @[@"", @"Distance", @"Sort By", @"Category"];
     return titleOfSection[section];
 }
-
-/*
-// Override to support conditional editing of the table view.
-- (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath {
-    // Return NO if you do not want the specified item to be editable.
-    return YES;
-}
-*/
-
-/*
-// Override to support editing the table view.
-- (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath {
-    if (editingStyle == UITableViewCellEditingStyleDelete) {
-        // Delete the row from the data source
-        [tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
-    } else if (editingStyle == UITableViewCellEditingStyleInsert) {
-        // Create a new instance of the appropriate class, insert it into the array, and add a new row to the table view
-    }   
-}
-*/
-
-/*
-// Override to support rearranging the table view.
-- (void)tableView:(UITableView *)tableView moveRowAtIndexPath:(NSIndexPath *)fromIndexPath toIndexPath:(NSIndexPath *)toIndexPath {
-}
-*/
-
-/*
-// Override to support conditional rearranging of the table view.
-- (BOOL)tableView:(UITableView *)tableView canMoveRowAtIndexPath:(NSIndexPath *)indexPath {
-    // Return NO if you do not want the item to be re-orderable.
-    return YES;
-}
-*/
-
-/*
-#pragma mark - Navigation
-
-// In a storyboard-based application, you will often want to do a little preparation before navigation
-- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
-    // Get the new view controller using [segue destinationViewController].
-    // Pass the selected object to the new view controller.
-}
-*/
 
 - (void)initCategories {
     self.categories = @[

@@ -235,7 +235,7 @@
                     </navigationItem>
                     <nil key="simulatedBottomBarMetrics"/>
                     <connections>
-                        <outlet property="tableVIew" destination="VAu-l8-Yb2" id="lGO-4r-FZU"/>
+                        <outlet property="tableView" destination="VAu-l8-Yb2" id="8cJ-TJ-i8e"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="Rxf-Ty-83P" userLabel="First Responder" sceneMemberID="firstResponder"/>

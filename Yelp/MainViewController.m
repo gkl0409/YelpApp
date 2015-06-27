@@ -20,7 +20,10 @@ NSString * const kYelpTokenSecret = @"mqtKIxMIR4iBtBPZCmCLEb-Dz3Y";
 
 @property (nonatomic, strong) YelpClient *client;
 @property (nonatomic, strong) NSArray *businesses;
-@property (nonatomic, strong) IBOutlet UITableView *tableView;
+@property (nonatomic, strong) UISearchBar *searchBar;
+@property (nonatomic, strong) NSMutableDictionary *searchParam;
+
+@property (nonatomic, weak) IBOutlet UITableView *tableView;
 
 @end
 
@@ -31,37 +34,38 @@ NSString * const kYelpTokenSecret = @"mqtKIxMIR4iBtBPZCmCLEb-Dz3Y";
     [super viewDidLoad];
     self.tableView.delegate = self;
     self.tableView.dataSource = self;
-    self.navigationItem.titleView = [[UISearchBar alloc] init];
-    
-
+    self.searchBar = [[UISearchBar alloc] init];
+    self.searchBar.delegate = self;
+    self.searchBar.text = @"";
+    self.navigationItem.titleView = self.searchBar;
+    self.searchParam = [NSMutableDictionary dictionaryWithObject: self.searchBar.text forKey:@"term"];
     // You can register for Yelp API keys here: http://www.yelp.com/developers/manage_api_keys
     self.client = [[YelpClient alloc] initWithConsumerKey:kYelpConsumerKey consumerSecret:kYelpConsumerSecret accessToken:kYelpToken accessSecret:kYelpTokenSecret];
-    
-    [self.client searchWithDict:@{@"term":@"Thai"} success:^(AFHTTPRequestOperation *operation, id response) {
-//        NSLog(@"%@", response[@"businesses"]);
-        self.businesses = [Business businessesWithDictionaries:response[@"businesses"]];
-
-        // use GCD for best performance
-//        dispatch_sync(dispatch_get_main_queue(), ^{
-            [self.tableView reloadData];
-//            NSLog(@"reload");
-//        });
-    } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
-        NSLog(@"error: %@", [error description]);
-    }];
+    [self callYelpSearchApi];
 }
 
-- (void)filtersViewController:(FiltersViewController *)filtersViewController didChangeFilters:(NSDictionary *)filters
+- (void)callYelpSearchApi
 {
-    [self.client searchWithDict:filters success:^(AFHTTPRequestOperation *operation, id response) {
-        NSLog(@"%@",response);
+    if ([self.searchBar.text isEqualToString:@""]) {
+        [self.searchParam removeObjectForKey:@"term"];
+    } else {
+        [self.searchParam setObject:self.searchBar.text forKey:@"term"];
+    }
+    NSLog(@"searchParam: %@", self.searchParam);
+    [self.client searchWithDict:self.searchParam success:^(AFHTTPRequestOperation *operation, id response) {
+        //        NSLog(@"%@", response[@"businesses"]);
         self.businesses = [Business businessesWithDictionaries:response[@"businesses"]];
         
+        // use GCD for best performance
+        //        dispatch_sync(dispatch_get_main_queue(), ^{
         [self.tableView reloadData];
+        //            NSLog(@"reload");
+        //        });
     } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
         NSLog(@"error: %@", [error description]);
     }];
 }
+
 
 - (void)didReceiveMemoryWarning
 {
@@ -69,14 +73,23 @@ NSString * const kYelpTokenSecret = @"mqtKIxMIR4iBtBPZCmCLEb-Dz3Y";
     // Dispose of any resources that can be recreated.
 }
 
+# pragma mark - FiltersViewControllerDelegate
+- (void)filtersViewController:(FiltersViewController *)filtersViewController didChangeFilters:(NSDictionary *)filters
+{
+    self.searchParam = [NSMutableDictionary dictionaryWithDictionary:filters];
+    [self callYelpSearchApi];
+}
+
+# pragma mark - UITableViewDataSource
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-    return self.businesses.count;
-    NSLog(@"count %ld", self.businesses.count);
+    return [self.businesses count];
+    NSLog(@"tableView numberOfRowsInSection %ld", self.businesses.count);
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
+    NSLog(@"tableView cellForRowAtIndexPath %ld %ld",indexPath.section, indexPath.row);
     BusinessCell *cell = [tableView dequeueReusableCellWithIdentifier:@"BusinessCell" forIndexPath:indexPath];
     
     Business *bus = self.businesses[indexPath.row];
@@ -94,6 +107,15 @@ NSString * const kYelpTokenSecret = @"mqtKIxMIR4iBtBPZCmCLEb-Dz3Y";
     return cell;
 }
 
+# pragma mark - UISearchBarDelegate
+- (void)searchBarSearchButtonClicked:(UISearchBar *)searchBar
+{
+    [searchBar resignFirstResponder];
+    [self callYelpSearchApi];
+    
+}
+
+# pragma mark - UITableViewDelegate
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
     [self.tableView deselectRowAtIndexPath:indexPath animated:NO];

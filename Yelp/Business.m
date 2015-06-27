@@ -12,10 +12,11 @@
 
 + (NSArray *)businessesWithDictionaries:(NSArray *)businessDictionaries {
 
-    if (businessDictionaries == nil) return nil;
+    if (businessDictionaries == nil) return [NSArray array];
     
     NSMutableArray *businessArray = [[NSMutableArray alloc] initWithCapacity: [businessDictionaries count]];
     for (NSDictionary *dictionary in businessDictionaries) {
+//        NSLog(@"one busi : %@", dictionary);
         Business *business = [[Business alloc] initWithDictionary:dictionary];
         [businessArray addObject:business];
     }
@@ -34,8 +35,17 @@
         self.categories = [categoryNames componentsJoinedByString:@", "];
         self.name = dictionary[@"name"];
         self.imageUrl = dictionary[@"image_url"];
-        NSString *street = [dictionary valueForKeyPath:@"location.address"][0];
-        NSString *neighborhood = [dictionary valueForKeyPath:@"location.neighborhoods"][0];
+
+        NSString *street = @"";
+        if ([[dictionary valueForKeyPath:@"location.address"] count] > 0) {
+            street = [[dictionary valueForKeyPath:@"location.address"] objectAtIndex:0];
+        }
+
+        NSString *neighborhood = @"";
+        if ([[dictionary valueForKeyPath:@"location.neighborhoods"] count] > 0) {
+            neighborhood = [[dictionary valueForKeyPath:@"location.neighborhoods"] objectAtIndex:0];
+        }
+
         self.address = [NSString stringWithFormat:@"%@, %@", street, neighborhood];
         self.reviewCount = [dictionary[@"review_count"] integerValue];
         self.ratingImgUrl = dictionary[@"rating_img_url"];

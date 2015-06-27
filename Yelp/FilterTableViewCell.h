@@ -20,6 +20,6 @@
 
 @property (nonatomic, weak) UILabel *titleLabel;
 @property (nonatomic, weak) id<FilterTableViewCellDelegate> delegate;
-@property BOOL enabled;
+@property (nonatomic,assign) BOOL enabled;
 
 @end
