@@ -93,11 +93,11 @@ NSString * const kYelpTokenSecret = @"mqtKIxMIR4iBtBPZCmCLEb-Dz3Y";
     BusinessCell *cell = [tableView dequeueReusableCellWithIdentifier:@"BusinessCell" forIndexPath:indexPath];
     
     Business *bus = self.businesses[indexPath.row];
-    [cell.imageView setImageWithURL:[NSURL URLWithString: bus.imageUrl]];
-    [cell.imageView setContentMode:UIViewContentModeScaleAspectFill];
+    [cell.mainImageView setContentMode:UIViewContentModeScaleAspectFill];
+    [cell.mainImageView setImageWithURL:[NSURL URLWithString: bus.imageUrl]];
 
-    [cell.imageView.layer setCornerRadius: 3];
-    [cell.imageView setClipsToBounds:YES];
+    [cell.mainImageView.layer setCornerRadius: 3];
+    [cell.mainImageView setClipsToBounds:YES];
     cell.NameLabel.text = bus.name;
     cell.distanceLabel.text = [NSString stringWithFormat:@"%.2fkm", bus.distance];
     [cell.ratingImageView setImageWithURL:[NSURL URLWithString:bus.ratingImgUrl]];
